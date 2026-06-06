@@ -7,6 +7,7 @@
 create or replace function public.taxonomy_with_descendants(p_ids uuid[])
 returns table(id uuid)
 language sql stable
+set search_path = public
 as $$
   with recursive t as (
     select x.id from public.taxonomy x where x.id = any(p_ids)
@@ -117,7 +118,7 @@ begin
       'status_filter', p_status_filter,
       'limit', p_limit
     ),
-    array_length(v_ids, 1)
+    coalesce(array_length(v_ids, 1), 0)
   )
   returning id into v_session;
 
@@ -140,9 +141,11 @@ begin
 end;
 $$;
 
--- Permissões: as internas NÃO podem ser chamadas pelo cliente.
-revoke execute on function public.select_question_ids(uuid, uuid[], text) from public;
-revoke execute on function public.taxonomy_with_descendants(uuid[]) from public;
+-- Permissões: as internas NÃO podem ser chamadas pelo cliente. No Supabase os
+-- papéis anon/authenticated recebem EXECUTE por default privileges, então é
+-- preciso revogar deles explicitamente (revogar de PUBLIC não basta).
+revoke execute on function public.select_question_ids(uuid, uuid[], text) from public, anon, authenticated;
+revoke execute on function public.taxonomy_with_descendants(uuid[]) from public, anon, authenticated;
 grant execute on function public.count_questions(uuid[], text) to authenticated;
 grant execute on function public.create_session(session_mode, uuid[], text, int) to authenticated;
 grant execute on function public.finish_session(uuid) to authenticated;

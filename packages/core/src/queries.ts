@@ -187,6 +187,23 @@ export async function fetchSessionAttempts(c: AnestheQuestClient, sessionId: str
   return unwrap(await c.from('attempts').select('*').eq('session_id', sessionId));
 }
 
+// Total/acerto geral a partir de attempts (evita contagem dupla de questões
+// com múltiplas taxonomias, que ocorreria ao somar analytics_aggregates).
+export async function fetchOverallStats(
+  c: AnestheQuestClient,
+): Promise<{ total: number; correct: number; accuracy: number }> {
+  const totalRes = await c.from('attempts').select('id', { count: 'exact', head: true });
+  if (totalRes.error) throw new Error(totalRes.error.message);
+  const correctRes = await c
+    .from('attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('correto', true);
+  if (correctRes.error) throw new Error(correctRes.error.message);
+  const total = totalRes.count ?? 0;
+  const correct = correctRes.count ?? 0;
+  return { total, correct, accuracy: total ? Math.round((1000 * correct) / total) / 10 : 0 };
+}
+
 export async function fetchRecentSessions(c: AnestheQuestClient, limit = 20) {
   return unwrap(
     await c.from('sessions').select('*').order('created_at', { ascending: false }).limit(limit),
@@ -312,13 +329,10 @@ export async function createFlashcard(
 ): Promise<Flashcard> {
   const userId = (await c.auth.getUser()).data.user?.id;
   if (!userId) throw new Error('not authenticated');
+  // O srs_state inicial é criado atomicamente pelo trigger trg_init_srs.
   const fres = await c.from('flashcards').insert({ ...input, user_id: userId }).select().single();
   if (fres.error) throw new Error(fres.error.message);
-  const card = fres.data;
-  const s = newCardState();
-  const sres = await c.from('srs_state').insert({ flashcard_id: card.id, ...s });
-  if (sres.error) throw new Error(sres.error.message);
-  return card;
+  return fres.data;
 }
 
 export async function reviewFlashcard(

@@ -47,6 +47,10 @@ export function useAnalytics() {
   return useQuery({ queryKey: keys.analytics, queryFn: () => core.fetchAnalytics(supabase) });
 }
 
+export function useOverallStats() {
+  return useQuery({ queryKey: ['overall-stats'], queryFn: () => core.fetchOverallStats(supabase) });
+}
+
 export function useRecentSessions() {
   return useQuery({ queryKey: keys.sessions, queryFn: () => core.fetchRecentSessions(supabase) });
 }

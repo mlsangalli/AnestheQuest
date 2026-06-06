@@ -31,12 +31,18 @@ Deno.serve(async (req) => {
     const { question } = await req.json();
     if (!question || typeof question !== 'string') return json({ error: 'Pergunta vazia' }, 400);
 
-    // Client com o JWT do usuário -> match_explanations valida a assinatura.
+    // Client com o JWT do usuário.
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
     );
+
+    // Gate de auth + assinatura ANTES de qualquer chamada paga ao OpenAI.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return json({ error: 'Não autenticado' }, 401);
+    const { data: isSub } = await supabase.rpc('is_active_subscriber');
+    if (!isSub) return json({ error: 'Assinatura ativa necessária' }, 403);
 
     const emb = await openai('embeddings', { model: EMBED_MODEL, input: question });
     const queryEmbedding = emb.data[0].embedding as number[];

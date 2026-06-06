@@ -37,7 +37,7 @@ export default function CriarTeste() {
   });
 
   const available = count.data ?? 0;
-  const effectiveLimit = Math.min(limit, available || limit);
+  const effectiveLimit = Math.min(limit, available);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -115,7 +115,9 @@ export default function CriarTeste() {
         <Text style={styles.previewText}>
           {count.isLoading ? 'Calculando…' : `${available} questões disponíveis`}
         </Text>
-        <Text style={styles.previewSub}>O bloco terá até {effectiveLimit} questões.</Text>
+        {available > 0 && (
+          <Text style={styles.previewSub}>O bloco terá até {effectiveLimit} questões.</Text>
+        )}
       </Card>
 
       {err && <Text style={styles.err}>{err}</Text>}

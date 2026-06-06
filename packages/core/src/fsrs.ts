@@ -31,6 +31,7 @@ export interface SrsState {
   reps: number;
   lapses: number;
   state: number;
+  learning_steps: number;
 }
 
 export function newCardState(now: Date = new Date()): SrsState {
@@ -47,6 +48,7 @@ function stateToCard(s: SrsState): Card {
     reps: s.reps,
     lapses: s.lapses,
     state: s.state as State,
+    learning_steps: s.learning_steps,
     last_review: s.last_review ? new Date(s.last_review) : undefined,
   };
 }
@@ -60,6 +62,7 @@ function cardToState(card: Card): SrsState {
     reps: card.reps,
     lapses: card.lapses,
     state: card.state,
+    learning_steps: card.learning_steps,
   };
 }
 

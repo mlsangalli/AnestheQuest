@@ -1,11 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
 import * as core from '@anesthequest/core';
 import { Screen, Card, SectionTitle, Loading, ErrorState, EmptyState } from '@/components/ui';
-import { useAnalytics } from '@/hooks/useData';
+import { useAnalytics, useOverallStats } from '@/hooks/useData';
 import { colors, spacing, radius } from '@/theme/colors';
 
 export default function Desempenho() {
   const analytics = useAnalytics();
+  const overall = useOverallStats();
 
   if (analytics.isLoading) return <Loading />;
   if (analytics.error) return <ErrorState error={analytics.error} />;
@@ -27,15 +28,11 @@ export default function Desempenho() {
     );
   }
 
-  const total = rows.reduce((s, r) => s + r.n_total, 0);
-  const correct = rows.reduce((s, r) => s + r.n_correct, 0);
-  const overall = core.accuracyPct(correct, total);
-
   return (
     <Screen>
       <Card style={styles.overallCard}>
-        <Text style={styles.overallValue}>{overall}%</Text>
-        <Text style={styles.overallLabel}>acerto geral · {total} questões</Text>
+        <Text style={styles.overallValue}>{Math.round(overall.data?.accuracy ?? 0)}%</Text>
+        <Text style={styles.overallLabel}>acerto geral · {overall.data?.total ?? 0} questões</Text>
       </Card>
 
       <SectionTitle>Por tema (pontos fracos primeiro)</SectionTitle>

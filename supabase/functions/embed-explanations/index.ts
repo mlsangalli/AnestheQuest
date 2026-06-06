@@ -28,10 +28,16 @@ Deno.serve(async (req) => {
   try {
     const { data: explanations } = await admin
       .from('explanations')
-      .select('id, texto_geral, objetivo_educacional');
-    const { data: existing } = await admin.from('explanation_embeddings').select('explanation_id');
-    const have = new Set((existing ?? []).map((e) => e.explanation_id));
-    const todo = (explanations ?? []).filter((e) => !have.has(e.id));
+      .select('id, texto_geral, objetivo_educacional, updated_at');
+    const { data: existing } = await admin
+      .from('explanation_embeddings')
+      .select('explanation_id, updated_at');
+    // Reprocessa quando não há embedding OU a explicação foi editada depois.
+    const embAt = new Map((existing ?? []).map((e) => [e.explanation_id, e.updated_at]));
+    const todo = (explanations ?? []).filter((e) => {
+      const at = embAt.get(e.id);
+      return !at || new Date(e.updated_at) > new Date(at);
+    });
 
     let processed = 0;
     for (let i = 0; i < todo.length; i += 50) {
@@ -50,7 +56,7 @@ Deno.serve(async (req) => {
       processed += rows.length;
     }
 
-    return json({ processed, skipped: have.size });
+    return json({ processed, skipped: (explanations?.length ?? 0) - todo.length });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : 'Erro' }, 500);
   }

@@ -22,8 +22,22 @@ const STATUS_MAP: Record<string, string> = {
 };
 
 async function upsertFromSubscription(sub: Stripe.Subscription, userIdHint?: string) {
-  const userId = userIdHint ?? (sub.metadata?.user_id as string | undefined);
-  if (!userId) return;
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+  let userId = userIdHint ?? (sub.metadata?.user_id as string | undefined);
+  // Fallback: assinatura já conhecida (updates/deletes sem metadata) -> mapeia
+  // pelo customer do Stripe.
+  if (!userId) {
+    const { data } = await admin
+      .from('subscriptions')
+      .select('user_id')
+      .eq('provider_customer_id', customerId)
+      .maybeSingle();
+    userId = data?.user_id ?? undefined;
+  }
+  if (!userId) {
+    console.warn('subscription event without resolvable user_id:', sub.id);
+    return;
+  }
   const plan = (sub.metadata?.plan as string | undefined) ?? 'anual';
   await admin.from('subscriptions').upsert(
     {
@@ -31,7 +45,7 @@ async function upsertFromSubscription(sub: Stripe.Subscription, userIdHint?: str
       plano: plan,
       status: STATUS_MAP[sub.status] ?? 'incomplete',
       provider: 'stripe',
-      provider_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+      provider_customer_id: customerId,
       provider_subscription_id: sub.id,
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
       cancel_at_period_end: sub.cancel_at_period_end,

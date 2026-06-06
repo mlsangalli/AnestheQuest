@@ -43,6 +43,7 @@ export default function Caderno() {
       )}
 
       <NoteModal
+        key={editing === 'new' ? 'new' : editing?.id ?? 'closed'}
         note={editing}
         saving={createNote.isPending || updateNote.isPending}
         onClose={() => setEditing(null)}
@@ -68,14 +69,13 @@ function NoteModal({
   onSave: (titulo: string, conteudo: string) => void;
 }) {
   const initial = note && note !== 'new' ? note : null;
+  // O componente é remontado por `key` no pai a cada nota, então o estado
+  // inicializa corretamente; inputs controlados mantêm valor == estado.
   const [titulo, setTitulo] = useState(initial?.titulo ?? '');
   const [conteudo, setConteudo] = useState(initial?.conteudo ?? '');
 
-  // re-sincroniza ao abrir outra nota
-  const key = note === 'new' ? 'new' : note?.id ?? 'none';
-
   return (
-    <Modal visible={note !== null} animationType="slide" transparent onRequestClose={onClose} key={key}>
+    <Modal visible={note !== null} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>{note === 'new' ? 'Nova nota' : 'Editar nota'}</Text>
@@ -83,7 +83,7 @@ function NoteModal({
             style={styles.input}
             placeholder="Título"
             placeholderTextColor={colors.textLight}
-            defaultValue={initial?.titulo ?? ''}
+            value={titulo}
             onChangeText={setTitulo}
           />
           <TextInput
@@ -91,7 +91,7 @@ function NoteModal({
             placeholder="Conteúdo"
             placeholderTextColor={colors.textLight}
             multiline
-            defaultValue={initial?.conteudo ?? ''}
+            value={conteudo}
             onChangeText={setConteudo}
           />
           <View style={styles.actions}>

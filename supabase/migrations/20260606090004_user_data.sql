@@ -80,6 +80,7 @@ create table public.srs_state (
   reps         int not null default 0,
   lapses       int not null default 0,
   state        int not null default 0,  -- FSRS: 0=new 1=learning 2=review 3=relearning
+  learning_steps int not null default 0, -- passo atual na fase de aprendizado (FSRS short-term)
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -131,6 +132,7 @@ create table public.analytics_aggregates (
   taxonomy_id uuid not null references public.taxonomy(id) on delete cascade,
   n_correct   int not null default 0,
   n_total     int not null default 0,
+  n_timed     int not null default 0,   -- nº de tentativas com tempo_seg não-nulo (peso de avg_time)
   avg_time    double precision,
   updated_at  timestamptz not null default now(),
   primary key (user_id, taxonomy_id)

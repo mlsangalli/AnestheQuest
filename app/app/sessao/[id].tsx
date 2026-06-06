@@ -54,6 +54,8 @@ export default function SessionPlayer() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [finishing, setFinishing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const qStartRef = useRef(Date.now());
 
   const budget = questions.length * 90; // 1,5 min/questão
@@ -73,6 +75,7 @@ export default function SessionPlayer() {
   }, []);
   useEffect(() => {
     qStartRef.current = Date.now();
+    setSubmitError(null);
   }, [current]);
 
   const finish = useCallback(async () => {
@@ -108,17 +111,25 @@ export default function SessionPlayer() {
   const correctIds = qState.result?.correct_choice_ids ?? [];
 
   async function confirm() {
-    if (!qState.selectedId || !q) return;
-    const tempo = Math.round((Date.now() - qStartRef.current) / 1000);
-    const result = await core.gradeAttempt(supabase, {
-      sessionId,
-      questionId: q.id,
-      choiceId: qState.selectedId,
-      tempoSeg: tempo,
-      flagged: qState.flagged,
-    });
-    setQ(q.id, { result });
-    if (!revealPerQuestion) goNext();
+    if (!qState.selectedId || !q || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const tempo = Math.round((Date.now() - qStartRef.current) / 1000);
+      const result = await core.gradeAttempt(supabase, {
+        sessionId,
+        questionId: q.id,
+        choiceId: qState.selectedId,
+        tempoSeg: tempo,
+        flagged: qState.flagged,
+      });
+      setQ(q.id, { result });
+      if (!revealPerQuestion) goNext();
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'Erro ao registrar a resposta. Tente novamente.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function goNext() {
@@ -222,9 +233,16 @@ export default function SessionPlayer() {
       </ScrollView>
 
       {/* Barra inferior */}
+      {submitError && <Text style={styles.submitError}>{submitError}</Text>}
       <View style={styles.bottombar}>
         {!revealed ? (
-          <Button title="Confirmar resposta" onPress={confirm} disabled={!qState.selectedId} style={{ flex: 1 }} />
+          <Button
+            title="Confirmar resposta"
+            onPress={confirm}
+            disabled={!qState.selectedId || submitting}
+            loading={submitting}
+            style={{ flex: 1 }}
+          />
         ) : (
           <Button
             title={current < questions.length - 1 ? 'Próxima →' : 'Finalizar'}
@@ -300,6 +318,13 @@ const styles = StyleSheet.create({
   choices: { gap: spacing.sm, marginTop: spacing.md },
   report: { padding: spacing.md, alignItems: 'center' },
   reportText: { color: colors.textMuted, textDecorationLine: 'underline' },
+  submitError: {
+    color: colors.incorrect,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    backgroundColor: colors.white,
+  },
   bottombar: {
     flexDirection: 'row',
     padding: spacing.md,

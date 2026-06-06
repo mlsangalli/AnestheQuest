@@ -259,6 +259,7 @@ export interface Database {
           reps: number;
           lapses: number;
           state: number;
+          learning_steps: number;
           created_at: string;
           updated_at: string;
         };
@@ -272,6 +273,7 @@ export interface Database {
           reps?: number;
           lapses?: number;
           state?: number;
+          learning_steps?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -334,6 +336,7 @@ export interface Database {
           taxonomy_id: string;
           n_correct: number;
           n_total: number;
+          n_timed: number;
           avg_time: number | null;
           updated_at: string;
         };
@@ -342,6 +345,7 @@ export interface Database {
           taxonomy_id: string;
           n_correct?: number;
           n_total?: number;
+          n_timed?: number;
           avg_time?: number | null;
           updated_at?: string;
         };

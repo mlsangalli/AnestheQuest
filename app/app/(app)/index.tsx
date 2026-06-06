@@ -2,27 +2,27 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MODE_LABELS } from '@anesthequest/core';
 import { Screen, Button, Card, SectionTitle, Badge, EmptyState } from '@/components/ui';
-import { useIsSubscriber, useRecentSessions, useAnalytics } from '@/hooks/useData';
+import { useIsSubscriber, useRecentSessions, useAnalytics, useOverallStats } from '@/hooks/useData';
 import { useAuth } from '@/providers/AuthProvider';
 import { colors, spacing, radius } from '@/theme/colors';
 
 export default function Home() {
   const router = useRouter();
   const { user } = useAuth();
-  const { isSubscriber } = useIsSubscriber();
+  const { isSubscriber, isLoading: subLoading } = useIsSubscriber();
   const sessions = useRecentSessions();
   const analytics = useAnalytics();
+  const overall = useOverallStats();
 
-  const totalAnswered = (analytics.data ?? []).reduce((s, a) => s + a.n_total, 0);
-  const totalCorrect = (analytics.data ?? []).reduce((s, a) => s + a.n_correct, 0);
-  const overall = totalAnswered ? Math.round((100 * totalCorrect) / totalAnswered) : 0;
+  const totalAnswered = overall.data?.total ?? 0;
+  const overallPct = Math.round(overall.data?.accuracy ?? 0);
 
   return (
     <Screen>
       <Text style={styles.greeting}>Olá{user?.email ? `, ${user.email.split('@')[0]}` : ''} 👋</Text>
       <Text style={styles.sub}>Pronto para praticar?</Text>
 
-      {!isSubscriber && (
+      {!subLoading && !isSubscriber && (
         <Card style={styles.paywallCard}>
           <Badge label="Acesso bloqueado" color={colors.accent} />
           <Text style={styles.paywallText}>
@@ -34,13 +34,14 @@ export default function Home() {
 
       <Button
         title="＋ Criar teste"
+        disabled={subLoading}
         onPress={() => router.push(isSubscriber ? '/criar-teste' : '/paywall')}
         style={{ marginTop: spacing.md }}
       />
 
       <Card style={styles.statRow}>
         <Stat label="Questões" value={String(totalAnswered)} />
-        <Stat label="Acerto geral" value={`${overall}%`} />
+        <Stat label="Acerto geral" value={`${overallPct}%`} />
         <Stat label="Temas" value={String((analytics.data ?? []).length)} />
       </Card>
 

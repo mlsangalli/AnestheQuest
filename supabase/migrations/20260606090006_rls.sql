@@ -47,6 +47,8 @@ create policy choices_read on public.choices
   );
 
 alter table public.explanations enable row level security;
+-- Explicação só é legível APÓS o usuário ter tentado a questão (espelha o
+-- UWorld e impede ler a resposta antes de responder).
 create policy explanations_read on public.explanations
   for select to authenticated
   using (
@@ -54,6 +56,10 @@ create policy explanations_read on public.explanations
     and exists (
       select 1 from public.questions q
       where q.id = explanations.question_id and q.status = 'publicada'
+    )
+    and exists (
+      select 1 from public.attempts a
+      where a.question_id = explanations.question_id and a.user_id = auth.uid()
     )
   );
 
@@ -67,6 +73,12 @@ create policy choice_expl_read on public.choice_explanations
       from public.choices c
       join public.questions q on q.id = c.question_id
       where c.id = choice_explanations.choice_id and q.status = 'publicada'
+    )
+    and exists (
+      select 1
+      from public.choices c
+      join public.attempts a on a.question_id = c.question_id
+      where c.id = choice_explanations.choice_id and a.user_id = auth.uid()
     )
   );
 
@@ -83,7 +95,10 @@ create policy media_read on public.media
       (owner_type = 'explanation' and exists (
         select 1 from public.explanations e
         join public.questions q on q.id = e.question_id
-        where e.id = media.owner_id and q.status = 'publicada'))
+        where e.id = media.owner_id and q.status = 'publicada'
+          and exists (
+            select 1 from public.attempts a
+            where a.question_id = e.question_id and a.user_id = auth.uid())))
     )
   );
 
