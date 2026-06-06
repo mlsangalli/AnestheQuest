@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  build-test:
+    name: Lint · Typecheck · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck (core)
+        run: npm run core:typecheck
+
+      - name: Test (core — pontuação/tentativas)
+        run: npm test
+
+      - name: Typecheck (app — Expo)
+        run: npm run typecheck --workspace @anesthequest/app
+
+      - name: Build (landing — Next.js)
+        run: npm run web:build
+
+  db-tests:
+    name: Migrations + RLS (pgTAP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase (aplica migrations + seed)
+        run: supabase start
+      - name: Testes de RLS (pgTAP)
+        run: supabase test db
