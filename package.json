@@ -1,1 +1,31 @@
-{"name":"anesthquest","version":"0.1.0","private":true,"scripts":{"dev":"next dev","build":"next build","start":"next start","lint":"next lint"},"dependencies":{"next":"15.3.3","react":"19.1.0","react-dom":"19.1.0"},"devDependencies":{"@types/node":"22.15.29","@types/react":"19.1.6","@types/react-dom":"19.1.6","eslint":"9.28.0","eslint-config-next":"15.3.3","typescript":"5.8.3","@tailwindcss/postcss":"4.1.8","tailwindcss":"4.1.8"}}
+{
+  "name": "anesthequest",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "web",
+    "app"
+  ],
+  "scripts": {
+    "web": "npm run dev --workspace @anesthequest/web",
+    "web:build": "npm run build --workspace @anesthequest/web",
+    "app": "npm run start --workspace @anesthequest/app",
+    "app:web": "npm run web --workspace @anesthequest/app",
+    "test": "npm run test --workspace @anesthequest/core",
+    "core:test": "npm run test --workspace @anesthequest/core",
+    "core:typecheck": "npm run typecheck --workspace @anesthequest/core",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "db:stop": "supabase stop",
+    "gen:types": "supabase gen types typescript --local --schema public > packages/core/src/types/database.types.ts"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  },
+  "overrides": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  }
+}
