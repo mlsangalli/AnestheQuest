@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MODE_LABELS } from '@anesthequest/core';
 import { Screen, Button, Card, SectionTitle, Badge, EmptyState } from '@/components/ui';
 import { useIsSubscriber, useRecentSessions, useAnalytics } from '@/hooks/useData';
 import { useAuth } from '@/providers/AuthProvider';
-import { colors, spacing } from '@/theme/colors';
+import { colors, spacing, radius } from '@/theme/colors';
 
 export default function Home() {
   const router = useRouter();
@@ -44,6 +44,13 @@ export default function Home() {
         <Stat label="Temas" value={String((analytics.data ?? []).length)} />
       </Card>
 
+      <SectionTitle>Ferramentas</SectionTitle>
+      <View style={styles.tools}>
+        <ToolLink emoji="🧠" label="Flashcards" onPress={() => router.push('/flashcards')} />
+        <ToolLink emoji="🤖" label="Assistente IA" onPress={() => router.push('/assistente')} />
+        <ToolLink emoji="🗺️" label="Plano" onPress={() => router.push('/plano')} />
+      </View>
+
       <SectionTitle>Histórico recente</SectionTitle>
       {(sessions.data ?? []).length === 0 ? (
         <EmptyState title="Nenhum bloco ainda" subtitle="Crie seu primeiro teste para começar." />
@@ -81,6 +88,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ToolLink({ emoji, label, onPress }: { emoji: string; label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.tool}>
+      <Text style={styles.toolEmoji}>{emoji}</Text>
+      <Text style={styles.toolLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   greeting: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
   sub: { color: colors.textMuted, marginBottom: spacing.sm },
@@ -94,4 +110,17 @@ const styles = StyleSheet.create({
   sessionTitle: { fontWeight: '600', color: colors.textPrimary },
   sessionMeta: { fontSize: 12, color: colors.textMuted },
   verBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
+  tools: { flexDirection: 'row', gap: spacing.sm },
+  tool: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  toolEmoji: { fontSize: 24 },
+  toolLabel: { fontSize: 12, color: colors.textPrimary, fontWeight: '600', textAlign: 'center' },
 });

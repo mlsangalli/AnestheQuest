@@ -38,6 +38,9 @@ function Gate() {
       <Stack.Screen name="sessao/[id]" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="resultado/[id]" options={{ title: 'Resultado do bloco' }} />
       <Stack.Screen name="paywall" options={{ title: 'Assinatura', presentation: 'modal' }} />
+      <Stack.Screen name="flashcards" options={{ title: 'Flashcards' }} />
+      <Stack.Screen name="assistente" options={{ title: 'Assistente IA' }} />
+      <Stack.Screen name="plano" options={{ title: 'Plano de estudos' }} />
     </Stack>
   );
 }

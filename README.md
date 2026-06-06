@@ -105,6 +105,9 @@ Migrations versionadas em `supabase/migrations/` (rodam em ordem):
 | `…_functions` | `is_active_subscriber()`, `handle_new_user()`, `grade_attempt()`, `set_attempt_flag()` |
 | `…_rls` | Row-Level Security + ocultação da coluna `is_correct` |
 | `…_storage` | bucket `question-media` + policy |
+| `…_session_rpcs` | `create_session` / `count_questions` / `finish_session` (filtros + taxonomia) |
+| `…_simulados` | `simulado_results` + `record_simulado` (percentil de pares) |
+| `…_rag_pgvector` | `explanation_embeddings` + `match_explanations` (RAG, Fase 3) |
 
 Comandos:
 
@@ -136,6 +139,25 @@ values ('<USER_ID>', 'anual', 'active', 'stripe', now() + interval '1 year');
 
 ---
 
+## Edge Functions (Supabase, Deno)
+
+Em `supabase/functions/`:
+
+| Função | Uso | Env |
+|---|---|---|
+| `create-checkout` | Stripe Checkout para um plano (web) | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_*`, `SITE_URL` |
+| `stripe-webhook` | Sincroniza `subscriptions` (service role) | `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` |
+| `embed-explanations` | Gera embeddings das explicações (RAG) | `OPENAI_API_KEY` |
+| `ai-assistant` | Assistente RAG (gateado por assinatura) | `OPENAI_API_KEY` |
+
+```bash
+supabase functions serve            # local
+supabase functions deploy create-checkout stripe-webhook ai-assistant embed-explanations
+supabase secrets set STRIPE_SECRET_KEY=... OPENAI_API_KEY=...   # produção
+```
+
+`stripe-webhook` e `embed-explanations` rodam sem JWT de usuário (ver `config.toml`).
+
 ## Testes
 
 ```bash
@@ -157,8 +179,26 @@ e a taxonomia é provisória — a matriz oficial da SBA será inserida depois.
 ## Roadmap
 
 - [x] **Fase 0 — Fundação:** monorepo, schema + RLS, seed placeholder, scaffold Expo, client tipado, testes de pontuação e RLS.
-- [ ] **Fase 1 — MVP:** auth completa, Criar Teste, player (timer/flag/highlight/strikethrough/grade), explicação tutor, analytics, caderno, feedback, paywall Stripe.
-- [ ] **Fase 2 — Retenção:** flashcards + FSRS (`ts-fsrs`), simulados, percentil de pares.
-- [ ] **Fase 3 — IA e offline:** RAG (`pgvector`) sobre explicações, modo offline, study planner.
+- [x] **Fase 1 — MVP:** auth + perfil, Criar Teste, player (timer/flag/highlight/strikethrough/grade), explicação tutor, analytics, caderno, feedback, paywall (Stripe via edge function).
+- [x] **Fase 2 — Retenção:** flashcards + FSRS (`ts-fsrs`), simulados, percentil de pares.
+- [x] **Fase 3 — IA e offline:** RAG (`pgvector`) + assistente de IA, cache offline (React Query + AsyncStorage), plano de estudos.
 
-Ganchos para fases futuras (flashcards, `srs_state`, etc.) já existem no modelo de dados.
+> O conteúdo (questões/explicações) continua placeholder até a curadoria
+> clínica. Stripe/OpenAI exigem chaves para funcionar de ponta a ponta; o
+> código já está pronto e os fluxos degradam com mensagens claras quando
+> as chaves/funções não estão configuradas.
+
+### Estrutura do app (Expo Router)
+
+```
+app/app/
+  (auth)/sign-in        login / cadastro / magic link
+  (app)/                tabs: Início · Desempenho · Caderno · Perfil
+  criar-teste           montagem de bloco
+  sessao/[id]           player de questões
+  resultado/[id]        resultado + percentil
+  flashcards            revisão FSRS
+  assistente            assistente de IA (RAG)
+  plano                 plano de estudos
+  paywall               planos / assinatura
+```

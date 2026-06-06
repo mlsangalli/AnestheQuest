@@ -41,3 +41,10 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 enable_confirmations = false
+
+# Edge functions. Stripe e embeddings não recebem JWT de usuário.
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.embed-explanations]
+verify_jwt = false

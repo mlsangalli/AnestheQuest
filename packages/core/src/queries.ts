@@ -3,6 +3,7 @@
 import type { AnestheQuestClient } from './supabase';
 import type { Tables } from './types/database.types';
 import type { QuestionFilter, SessionMode } from './constants';
+import { newCardState, reviewCard, type ReviewRating, type SrsState } from './fsrs';
 
 export type Taxonomy = Tables<'taxonomy'>;
 export type Choice = Pick<Tables<'choices'>, 'id' | 'question_id' | 'texto' | 'ordem'>;
@@ -279,4 +280,61 @@ export async function fetchSession(c: AnestheQuestClient, id: string) {
 export async function recordSimulado(c: AnestheQuestClient, sessionId: string): Promise<SimuladoResult> {
   const data = unwrap(await c.rpc('record_simulado', { p_session_id: sessionId }));
   return data as unknown as SimuladoResult;
+}
+
+// ------------------------------------------------------------ flashcards (Fase 2)
+export type Flashcard = Tables<'flashcards'>;
+export type SrsRow = Tables<'srs_state'>;
+export interface FlashcardWithSrs extends Flashcard {
+  srs: SrsRow | null;
+}
+
+export async function fetchFlashcards(c: AnestheQuestClient): Promise<FlashcardWithSrs[]> {
+  const res = await c
+    .from('flashcards')
+    .select('*, srs:srs_state(*)')
+    .order('created_at', { ascending: false });
+  if (res.error) throw new Error(res.error.message);
+  const rows = (res.data ?? []) as unknown as (Flashcard & { srs: SrsRow | SrsRow[] | null })[];
+  return rows.map((f) => ({
+    ...f,
+    srs: Array.isArray(f.srs) ? f.srs[0] ?? null : f.srs ?? null,
+  }));
+}
+
+export function dueFlashcards(list: FlashcardWithSrs[], now: Date = new Date()): FlashcardWithSrs[] {
+  return list.filter((f) => !f.srs?.due_date || new Date(f.srs.due_date) <= now);
+}
+
+export async function createFlashcard(
+  c: AnestheQuestClient,
+  input: { frente: string; verso: string; origem_question_id?: string | null },
+): Promise<Flashcard> {
+  const userId = (await c.auth.getUser()).data.user?.id;
+  if (!userId) throw new Error('not authenticated');
+  const fres = await c.from('flashcards').insert({ ...input, user_id: userId }).select().single();
+  if (fres.error) throw new Error(fres.error.message);
+  const card = fres.data;
+  const s = newCardState();
+  const sres = await c.from('srs_state').insert({ flashcard_id: card.id, ...s });
+  if (sres.error) throw new Error(sres.error.message);
+  return card;
+}
+
+export async function reviewFlashcard(
+  c: AnestheQuestClient,
+  flashcardId: string,
+  srs: SrsState | null,
+  rating: ReviewRating,
+): Promise<void> {
+  const next = reviewCard(srs ?? newCardState(), rating);
+  const res = await c
+    .from('srs_state')
+    .upsert({ flashcard_id: flashcardId, ...next }, { onConflict: 'flashcard_id' });
+  if (res.error) throw new Error(res.error.message);
+}
+
+export async function deleteFlashcard(c: AnestheQuestClient, id: string) {
+  const { error } = await c.from('flashcards').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }

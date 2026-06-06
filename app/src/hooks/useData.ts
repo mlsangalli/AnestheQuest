@@ -87,3 +87,34 @@ export function useSubmitFeedback() {
       core.submitFeedback(supabase, f),
   });
 }
+
+// ----------------------------------------------------------- flashcards (Fase 2)
+export function useFlashcards() {
+  return useQuery({ queryKey: ['flashcards'], queryFn: () => core.fetchFlashcards(supabase) });
+}
+
+export function useCreateFlashcard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (i: { frente: string; verso: string; origem_question_id?: string | null }) =>
+      core.createFlashcard(supabase, i),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['flashcards'] }),
+  });
+}
+
+export function useReviewFlashcard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { flashcardId: string; srs: core.SrsRow | null; rating: core.ReviewRating }) =>
+      core.reviewFlashcard(supabase, a.flashcardId, a.srs, a.rating),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['flashcards'] }),
+  });
+}
+
+export function useDeleteFlashcard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => core.deleteFlashcard(supabase, id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['flashcards'] }),
+  });
+}
