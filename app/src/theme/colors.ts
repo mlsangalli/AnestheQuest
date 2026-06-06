@@ -9,6 +9,7 @@ export const colors = {
   bgDark: '#2B2B2B',
   white: '#FFFFFF',
   border: '#E2E2E2',
+  overlay: 'rgba(0, 0, 0, 0.5)',
   // feedback de resposta (player de questões — Fase 1)
   correct: '#2E7D32',
   incorrect: '#C62828',

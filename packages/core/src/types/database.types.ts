@@ -370,6 +370,34 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['question_feedback']['Insert']>;
         Relationships: [];
       };
+      simulado_results: {
+        Row: {
+          id: string;
+          user_id: string;
+          session_id: string | null;
+          n_correct: number;
+          n_total: number;
+          score: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          session_id?: string | null;
+          n_correct: number;
+          n_total: number;
+          score: number;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['simulado_results']['Insert']>;
+        Relationships: [];
+      };
+      explanation_embeddings: {
+        Row: { explanation_id: string; embedding: string | null; updated_at: string };
+        Insert: { explanation_id: string; embedding?: string | null; updated_at?: string };
+        Update: Partial<Database['public']['Tables']['explanation_embeddings']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -390,6 +418,36 @@ export interface Database {
       set_attempt_flag: {
         Args: { p_attempt_id: string; p_flagged: boolean };
         Returns: undefined;
+      };
+      create_session: {
+        Args: {
+          p_modo: Database['public']['Enums']['session_mode'];
+          p_taxonomy_ids: string[] | null;
+          p_status_filter: string;
+          p_limit: number;
+        };
+        Returns: Json;
+      };
+      count_questions: {
+        Args: { p_taxonomy_ids: string[] | null; p_status_filter: string };
+        Returns: number;
+      };
+      finish_session: {
+        Args: { p_session_id: string };
+        Returns: undefined;
+      };
+      record_simulado: {
+        Args: { p_session_id: string };
+        Returns: Json;
+      };
+      match_explanations: {
+        Args: { query_embedding: string; match_count?: number };
+        Returns: {
+          explanation_id: string;
+          question_id: string;
+          texto_geral: string;
+          similarity: number;
+        }[];
       };
     };
     Enums: {
